@@ -85,7 +85,7 @@ app.post("/messages", async (req, res) => {
         const participantExist = await db.collection("participants").findOne({ name: user });
 
         if (!participantExist) {
-            return res.status(422).send("Participante não não encontrado!");
+            return res.status(422).send("Participante não encontrado!");
         } else {
             await db.collection("messages").insertOne({
                 from: user, 
@@ -120,6 +120,24 @@ app.get("/messages", async (req, res) => {
         } else {
             res.send(messages);
         }
+    } catch(error) {
+        return res.status(500).send(error.message);
+    }
+});
+
+app.post("/status", async (req, res) => {
+    const { user } = req.headers;
+
+    try {
+        const participantExist = await db.collection("participants").findOne({ name: user });
+
+        if (!participantExist) {
+            return res.sendStatus(404);
+        } else {
+            await db.collection("participants").updateOne({ name: user }, { $set: { lastStatus: Date.now() } });
+        }
+
+        return res.sendStatus(200);
     } catch(error) {
         return res.status(500).send(error.message);
     }
