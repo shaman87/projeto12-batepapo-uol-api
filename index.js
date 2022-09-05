@@ -35,14 +35,14 @@ app.post("/participants", async (req, res) => {
 
     if (validation.error) {
         const errorList = validation.error.details.map(error => error.message);
-        res.status(422).send(errorList);
-    };
+        return res.status(422).send(errorList);
+    }
 
     try {
-        const participantsList = await db.collection("participants").findOne({ name });
+        const participant = await db.collection("participants").findOne({ name });
 
-        if (participantsList) {
-            res.status(409).send("Participante já cadastrado!");
+        if (participant) {
+            return res.status(409).send("Participante já cadastrado!");
         } else {
             await db.collection("participants").insertOne({ name, lastStatus: Date.now() });
 
@@ -54,11 +54,11 @@ app.post("/participants", async (req, res) => {
                 time: dayjs().format("HH:mm:ss")
             });
 
-            res.sendStatus(201);
+            return res.sendStatus(201);
         }
     } catch(error) {
-        res.status(500).send(error.message);
-    };
+        return res.status(500).send(error.message);
+    }
 });
 
 app.get("/participants", async (req, res) => {
@@ -66,8 +66,8 @@ app.get("/participants", async (req, res) => {
         const participantsList = await db.collection("participants").find().toArray();
         res.send(participantsList);
     } catch(error) {
-        res.sendStatus(500);
-    };
+        return res.sendStatus(500);
+    }
 });
 
 app.post("/messages", async (req, res) => {
@@ -78,14 +78,14 @@ app.post("/messages", async (req, res) => {
 
     if (validation.error) {
         const errorList = validation.error.details.map(error => error.message);
-        res.status(422).send(errorList);
-    };
+        return res.status(422).send(errorList);
+    }
 
     try {
         const participantExist = await db.collection("participants").findOne({ name: user });
 
         if (!participantExist) {
-            res.status(422).send("Participante não não encontrado!");
+            return res.status(422).send("Participante não não encontrado!");
         } else {
             await db.collection("messages").insertOne({
                 from: user, 
@@ -95,11 +95,34 @@ app.post("/messages", async (req, res) => {
                 time: dayjs().format("HH:mm:ss")
             });
 
-            res.sendStatus(201);
+            return res.sendStatus(201);
         }
     } catch(error) {
-        res.status(500).send(error.message);
-    };
+        return res.status(500).send(error.message);
+    }
+});
+
+app.get("/messages", async (req, res) => {
+    const { user } = req.headers;
+    const limit = parseInt(req.query.limit);
+
+    try {
+        const messagesList = await db.collection("messages").find().toArray();
+
+        const messages = messagesList.filter(message => {
+            if (message.type === "message" || message.type === "status" || message.from === user || message.to === user) {
+                return true;
+            }
+        });
+
+        if (limit) {
+            res.send(messages.slice(-limit));
+        } else {
+            res.send(messages);
+        }
+    } catch(error) {
+        return res.status(500).send(error.message);
+    }
 });
 
 app.listen(5000, () => console.log("Listening on port 5000"));
