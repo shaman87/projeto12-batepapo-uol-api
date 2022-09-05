@@ -49,7 +49,7 @@ app.post("/participants", async (req, res) => {
             await db.collection("messages").insertOne({
                 from: name, 
                 to: "Todos", 
-                text: "entra na sala", 
+                text: "entra na sala...", 
                 type: "status", 
                 time: dayjs().format("HH:mm:ss")
             });
@@ -142,5 +142,29 @@ app.post("/status", async (req, res) => {
         return res.status(500).send(error.message);
     }
 });
+
+setInterval(async () => {
+    try {
+        const inactiveParticipants = await db.collection("participants").find({ lastStatus: { $lt: Date.now() - 10000 } }).toArray();
+        
+        if (inactiveParticipants.length > 0) {
+            const leaveRoomMessages = inactiveParticipants.map(participant => {
+                return {
+                    from: participant.name, 
+                    to: "Todos", 
+                    text: "sai da sala...", 
+                    type: "status", 
+                    time: dayjs().format("HH:mm:ss")
+                };
+            });
+            
+            await db.collection("participants").deleteMany({ lastStatus: { $lt: Date.now() - 10000 } });
+            await db.collection("messages").insertMany(leaveRoomMessages);
+        }
+        
+    } catch(error) {
+        console.log({ error });
+    }
+}, 5000);
 
 app.listen(5000, () => console.log("Listening on port 5000"));
