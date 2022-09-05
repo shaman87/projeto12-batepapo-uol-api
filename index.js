@@ -157,7 +157,7 @@ setInterval(async () => {
                     time: dayjs().format("HH:mm:ss")
                 };
             });
-            
+            console.log(leaveRoomMessages);
             await db.collection("participants").deleteMany({ lastStatus: { $lt: Date.now() - 10000 } });
             await db.collection("messages").insertMany(leaveRoomMessages);
         }
@@ -165,6 +165,6 @@ setInterval(async () => {
     } catch(error) {
         console.log({ error });
     }
-}, 5000);
+}, 15000);
 
 app.listen(5000, () => console.log("Listening on port 5000"));
